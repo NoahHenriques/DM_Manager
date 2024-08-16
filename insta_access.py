@@ -1,16 +1,16 @@
 from instagrapi import Client
+import datetime
 
 class Insta_Chats():
-    contacts = None
+    contacts: dict = None
+    users: dict = None
     cl = None
-    def __init__(self):
-        username: str = input("Enter username")
-        password: str = input("Enter password")
+    def __init__(self, username: str, password: str):
         self.cl = Client()
         self.cl.login(username, password)
         #when they log into their account, save the client data on the cloud
 
-        self.contacts = self.find_all_threads()
+        self.contacts, self.users = self.find_all_threads()
         #this is how you message someone just based on their username
         self.cl.direct_threads(thread_message_limit=1)
 
@@ -19,22 +19,31 @@ class Insta_Chats():
         for chat in unread_chats:
             print("Unread Chat: {}".format(chat.thread_title))
             print(chat.messages[0].text)
+            print(chat.messages[0].timestamp.strftime("%A, %B %d, %Y at %I:%M:%S %p"))
             
     def get_chat(self, thread_title):
         thread = self.contacts[thread_title]
-        for chat in thread:
-                for messages in chat.messages:
-                    print("Chat with {}".format())
-                    print("{} \n".format(messages.text))
+        print(thread_title)
+        for chat in self.cl.direct_messages(thread):
+                print("{} sent: {}".format(self.users[chat.user_id], chat.text))
+                print(chat.timestamp.strftime("%A, %B %d, %Y at %I:%M:%S %p"))
     
     def find_all_threads(self):
         all_threads = self.cl.direct_threads(thread_message_limit = 1)
         contacts = {}
+        users = {}
         for thread in all_threads:
             contacts[thread.thread_title] = thread.id
-        return contacts
+            for user in thread.users:
+                 users[user.pk] = user.username
+            users[thread.inviter.pk] = thread.inviter.username
+        return contacts, users
 
-    
+
+noah = Insta_Chats("noot_orious", "Thisisnotapassword1")
+noah.get_unread_chats()
+noah.get_chat("Noah Henriques")
+
     
 '''
 #cl.direct_send(text="testing one two", user_ids=[n_henriq])
@@ -83,7 +92,8 @@ for message in messages:
 
 
 
-
+'''
+'''
 [DirectThread(pk='17930956223793885', id='340282366841710301244259655543300430012', 
               messages=[DirectMessage(id='31781874280108174433670161779130368', user_id='44506526362', thread_id=340282366841710301244259655543300430012, 
                                       timestamp=datetime.datetime(2024, 8, 5, 19, 0, 57), item_type='text', is_sent_by_viewer=True, is_shh_mode=False, reactions=None, 
