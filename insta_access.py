@@ -20,6 +20,9 @@ class Insta_Chats():
             print("Unread Chat: {}".format(chat.thread_title))
             print(chat.messages[0].text)
             print(chat.messages[0].timestamp.strftime("%A, %B %d, %Y at %I:%M:%S %p"))
+    
+    def send_message(self, thread_title, text):
+        self.cl.direct_answer(self.contacts[thread_title], text)
             
     def get_chat(self, thread_title):
         thread = self.contacts[thread_title]
