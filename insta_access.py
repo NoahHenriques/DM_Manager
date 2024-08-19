@@ -1,18 +1,64 @@
 from instagrapi import Client
+from instagrapi.exceptions import LoginRequired
+import logging
 import datetime
 
 class Insta_Chats():
     contacts: dict = None
     users: dict = None
     cl = None
+
     def __init__(self, username: str, password: str):
-        self.cl = Client()
+        self.login_user()
+        
         self.cl.login(username, password)
         #when they log into their account, save the client data on the cloud
 
         self.contacts, self.users = self.find_all_threads()
         #this is how you message someone just based on their username
         self.cl.direct_threads(thread_message_limit=1)
+
+    logger = logging.getLogger()
+
+    def login_user():
+        cl = Client()
+        session = cl.load_settings("session.json")
+
+        login_via_session = False
+        login_via_pw = False
+
+        if session:
+            try:
+                cl.set_settings(session)
+                cl.login(USERNAME, PASSWORD)
+
+                # check if session is valid
+                try:
+                    cl.get_timeline_feed()
+                except LoginRequired:
+                    logger.info("Session is invalid, need to login via username and password")
+
+                    old_session = cl.get_settings()
+
+                    # use the same device uuids across logins
+                    cl.set_settings({})
+                    cl.set_uuids(old_session["uuids"])
+
+                    cl.login(USERNAME, PASSWORD)
+                login_via_session = True
+            except Exception as e:
+                logger.info("Couldn't login user using session information: %s" % e)
+
+        if not login_via_session:
+            try:
+                logger.info("Attempting to login via username and password. username: %s" % USERNAME)
+                if cl.login(USERNAME, PASSWORD):
+                    login_via_pw = True
+            except Exception as e:
+                logger.info("Couldn't login user using username and password: %s" % e)
+
+        if not login_via_pw and not login_via_session:
+            raise Exception("Couldn't login user with either password or session")
 
     def get_unread_chats(self):
         unread_chats = self.cl.direct_threads(selected_filter="unread", thread_message_limit=1)
@@ -47,7 +93,7 @@ noah = Insta_Chats("noot_orious", "Thisisnotapassword1")
 noah.get_unread_chats()
 noah.get_chat("Noah Henriques")
 
-    
+
 '''
 #cl.direct_send(text="testing one two", user_ids=[n_henriq])
 
